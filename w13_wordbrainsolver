@@ -1,0 +1,172 @@
+#!/usr/bin/env python
+# Author Rishab Shah rishah@bu.edu
+# Author Prateek Mehta pmehta59@bu.edu
+
+import sys,re
+import json
+    
+    
+while(1):
+    try:
+        l=input()
+        list_mat = [""]
+        words = json.loads(l)['grid']
+        
+        for j in words:
+            list_mat.append(j)
+        
+        list_mat.append(','.join(str(x) for x in json.loads(l)['lengths']))
+        argvv=list_mat.copy()
+        gridsolutions = {}       
+        def plant_word_tree(dictionary):
+            tree = {}
+            for word in dictionary:
+                branch = tree
+                for letter in word:
+                    if letter not in branch:
+                        branch[letter] = {}
+                    branch = branch[letter]
+            return tree
+
+        def find_word1d(iword,grid1d,nrow,ncol):
+            if grid1d in gridsolutions:
+                return gridsolutions[grid1d]
+            else:
+                onesolutions = {}
+                gridsolutions[grid1d] = {}
+                for i0 in range(nrow*ncol):
+                    if grid1d[i0]==" ":
+                        continue
+                    newsolutions = gridwalk1d(i0,grid1d,nrow,ncol,grid1d[i0],((i0),),iword,tree[lengths[iword]][grid1d[i0]])
+                    onesolutions = merge_dicts(onesolutions,newsolutions)
+                    for key in newsolutions:
+                        gridsolutions[grid1d][key] = newsolutions[key]
+                return onesolutions
+        
+        
+        def gridwalk1d(i0,grid1d,nrow,ncol,start,visited,iword,branch):
+            onesolution = {}
+            for i in neighbors1d[i0]:
+                if grid1d[i] in branch and i not in visited:
+                    word = start + grid1d[i]
+                    if len(word) == lengths[iword]:
+                        if word not in onesolution:
+                            onesolution[word] = {}
+                        solution[iword] = word
+                        if iword==len(lengths)-1:
+                            jsolution = " ".join(solution)
+                            if jsolution not in jsolutions:
+                                solutions.append(list(solution))
+                                jsolutions.append(jsolution)
+                        if iword < len(lengths)-1:
+                            oldgrid1d = grid1d
+                            grid1d = update_grid1d(grid1d,nrow,ncol,visited+((i),))
+                            onesolution[word] = merge_dicts(onesolution[word],find_word1d(iword+1,grid1d,nrow,ncol))
+                            grid1d = oldgrid1d
+                    else:
+                        newsolution = gridwalk1d(i,grid1d,nrow,ncol,word,visited+((i),),iword,branch[grid1d[i]])
+                        onesolution = merge_dicts(onesolution,newsolution)
+            return onesolution
+        
+        
+        def update_grid1d(grid1d,nrow,ncol,visited):
+            for i in visited:
+                grid1d = grid1d[:i]+" "+grid1d[i+1:]
+            grid2d = [[letter for letter in row] for row in re.findall(".{%d}"%ncol,grid1d)]
+            for icol in range(ncol):
+                column = "".join([grid2d[irow][icol] for irow in range(nrow-1,-1,-1)])
+                column = column.replace(" ","")
+                column = column + " "*(nrow-len(column))
+                for irow in range(nrow):
+                    grid2d[irow][icol] = column[nrow-1-irow]
+            return "".join(["".join(row) for row in grid2d])
+        
+        
+
+        def make_neighbors1d(grid1d,nrow,ncol):
+            neighbors1d = [[] for letter in grid1d]
+            for i in range(nrow*ncol):
+                irow = i//ncol
+                icol = i%ncol
+                if icol<ncol-1:
+                    neighbors1d[i].append(i+1) #right
+                    if irow>0:
+                        neighbors1d[i].append(i-ncol+1) #right up
+                    if irow<nrow-1:
+                        neighbors1d[i].append(i+ncol+1) #right down
+                if icol>0:
+                    neighbors1d[i].append(i-1) #left
+                    if irow>0:
+                        neighbors1d[i].append(i-ncol-1) #left up
+                    if irow<nrow-1:
+                        neighbors1d[i].append(i+ncol-1) #left down
+                if irow>0:
+                    neighbors1d[i].append(i-ncol) #up
+                if irow<nrow-1:
+                    neighbors1d[i].append(i+ncol) #down
+            return neighbors1d
+        
+        
+        def merge_dicts(a, b, path=None):
+            if path is None: path = []
+            for key in b:
+                if key in a:
+                    if isinstance(a[key], dict) and isinstance(b[key], dict):
+                        merge_dicts(a[key], b[key], path + [str(key)])
+                    elif a[key] == b[key]:
+                        pass 
+                else:
+                    a[key] = b[key]
+            return a
+        
+        
+        def myprint(d,i,max,prefix):
+            for k, v in d.items():
+                if i==max:
+                    print(prefix+" "+k)
+                elif len(v)>0:
+                    if i==1:
+                        foo = k
+                    else:
+                        foo = prefix+" "+k
+                    myprint(v,i+1,max,foo)
+
+        grid = []
+        narg = len(argvv)
+        if narg > 1 and not argvv[1].isdigit():
+            for i in range(1,narg):
+                if argvv[i][0].isdigit():
+                    nrow = i-1
+                    break
+            grid = [row for row in argvv[1:nrow+1]]
+            list_p = []
+            j=0
+            while j<len(grid[0]):
+                for i in grid:
+                    list_p.append(i[j])
+                j+=1
+                
+            ncol = len(grid[0])
+            lengths = [int(x) for x in re.findall("\w",argvv[nrow+1])]
+        nwords = len(lengths)
+        grid1d = ''.join(list_p)
+        neighbors1d = make_neighbors1d(grid1d,nrow,ncol)
+       
+        maxlength = 8
+        with open('large_word_list.txt') as file:
+            data = [line.strip('\n') for line in file]
+        data[:]=[x for x in data if x != '']
+        fulldictionary = [line.strip() for line in data] #if line[0] != "#"
+        fulldictionary.sort()
+        dictionaries = [sorted([line.strip() for line in data if len(line)==length]) for length in range(maxlength+1)] #line[0] != "#" and
+        tree = []
+        for dictionary in dictionaries:
+            tree.append(plant_word_tree(dictionary))
+        solution = ["" for length in lengths]
+        solutions = []
+        jsolutions = []
+        globalsolution = find_word1d(0,grid1d,nrow,ncol)
+        myprint(globalsolution,1,len(lengths),"")
+        print('.')
+    except:
+        sys.exit(0)
