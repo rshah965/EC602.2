@@ -9,14 +9,8 @@ import json
 while(1):
     try:
         l=input()
-        list_mat = [""]
-        words = json.loads(l)['grid']
-        
-        for j in words:
-            list_mat.append(j)
-        
-        list_mat.append(','.join(str(x) for x in json.loads(l)['lengths']))
-        argvv=list_mat.copy()
+        grid = json.loads(l)['grid']
+        lengths = json.loads(l)['lengths']
         gridsolutions = {}       
         def plant_word_tree(dictionary):
             tree = {}
@@ -131,23 +125,15 @@ while(1):
                         foo = prefix+" "+k
                     myprint(v,i+1,max,foo)
 
-        grid = []
-        narg = len(argvv)
-        if narg > 1 and not argvv[1].isdigit():
-            for i in range(1,narg):
-                if argvv[i][0].isdigit():
-                    nrow = i-1
-                    break
-            grid = [row for row in argvv[1:nrow+1]]
-            list_p = []
-            j=0
-            while j<len(grid[0]):
-                for i in grid:
-                    list_p.append(i[j])
-                j+=1
-                
-            ncol = len(grid[0])
-            lengths = [int(x) for x in re.findall("\w",argvv[nrow+1])]
+        nrow=len(grid)
+        list_p = []
+        j=0
+        while j<len(grid[0]):
+            for i in grid:
+                list_p.append(i[j])
+            j+=1
+            
+        ncol = len(grid[0])
         nwords = len(lengths)
         grid1d = ''.join(list_p)
         neighbors1d = make_neighbors1d(grid1d,nrow,ncol)
@@ -156,9 +142,9 @@ while(1):
         with open('large_word_list.txt') as file:
             data = [line.strip('\n') for line in file]
         data[:]=[x for x in data if x != '']
-        fulldictionary = [line.strip() for line in data] #if line[0] != "#"
+        fulldictionary = [line.strip() for line in data]
         fulldictionary.sort()
-        dictionaries = [sorted([line.strip() for line in data if len(line)==length]) for length in range(maxlength+1)] #line[0] != "#" and
+        dictionaries = [sorted([line.strip() for line in data if len(line)==length]) for length in range(maxlength+1)]
         tree = []
         for dictionary in dictionaries:
             tree.append(plant_word_tree(dictionary))
